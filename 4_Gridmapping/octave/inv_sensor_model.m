@@ -18,35 +18,23 @@ function [mapUpdate, robPoseMapFrame, laserEndPntsMapFrame] = inv_sensor_model(m
 % laserEndPntsMapFrame are map coordinates of the endpoints of each laser beam (also used for visualization purposes).
 
 % Initialize mapUpdate.
-size(map);
 mapUpdate = zeros(size(map));
 
 % Robot pose as a homogeneous transformation matrix.
 robTrans = v2t(robPose);
 
 % TODO: compute robPoseMapFrame. Use your world_to_map_coordinates implementation.
-%%%%%%%%%%%%%%%
-%robPose
-%%%%%%%%%%%%%%%
-robPoseMapFrame(1:2) = world_to_map_coordinates(robPose(1:2),gridSize,offset);
+robPoseMapFrame(1:2) = world_to_map_coordinates(robPose(1:2), gridSize, offset);
 robPoseMapFrame(3) = robPose(3);
-%%%%%%%%%%%%%%%
-%robPoseMapFrame
-%%%%%%%%%%%%%%%
+
 % Compute the Cartesian coordinates of the laser beam endpoints.
 % Set the third argument to 'true' to use only half the beams for speeding up the algorithm when debugging.
 laserEndPnts = robotlaser_as_cartesian(scan, 30, false);
 
 % Compute the endpoints of the laser beams in the world coordinates frame.
 laserEndPnts = robTrans*laserEndPnts;
-
 % TODO: compute laserEndPntsMapFrame from laserEndPnts. Use your world_to_map_coordinates implementation.
-laserEndPntsMapFrame = world_to_map_coordinates(laserEndPnts(1:2,:),gridSize,offset);
-%laserEndPntsMapFrame(3,:) = laserEndPnts(3,:);
-%%%%%%%%%%%%
-%laserEndPntsMapFrame
-%%%%%%%%%%%%
-
+laserEndPntsMapFrame = world_to_map_coordinates(laserEndPnts(1:2,:), gridSize, offset);
 % freeCells are the map coordinates of the cells through which the laser beams pass.
 freeCells = [];
 
@@ -57,32 +45,22 @@ freeCells = [];
 % [X,Y] = bresenham(map,[p1_x, p1_y; p2_x, p2_y]);
 % You only need the X and Y outputs of this function.
 for sc=1:columns(laserEndPntsMapFrame)
-%%%	sc
-        %TODO: compute the XY map coordinates of the free cells along the laser beam ending in laserEndPntsMapFrame(:,sc)	
-	%%%%%%%%%%%%%%
-	%robPoseMapFrame(1)
-	%robPoseMapFrame(2)
-	%%%%%%%%%%%%%%
-%	[~,~,map,X,Y] = bresenham(map,[robPoseMapFrame(1), robPoseMapFrame(2); laserEndPntsMapFrame(:,sc)'],0);
-	[X,Y] = bresenham2([robPoseMapFrame(1), robPoseMapFrame(2); laserEndPntsMapFrame(1,sc), laserEndPntsMapFrame(2,sc)]);
+        %TODO: compute the XY map coordinates of the free cells along the laser beam ending in laserEndPntsMapFrame(:,sc)
+        [X,Y] = bresenham([robPoseMapFrame(1),robPoseMapFrame(2);laserEndPntsMapFrame(:,sc), laserEndPntsMapFrame(:,sc)]);
         %TODO: add them to freeCells
-	freeCells = [freeCells, [X;Y]];
-%	X
-%	Y
+        freeCells = [freeCells,[X;Y]]; 
 
 endfor
 
 
 %TODO: update the log odds values in mapUpdate for each free cell according to probFree.
-for i=1:size(freeCells,2)
-    tmpR = freeCells(1,i);
-    tmpC = freeCells(2,i);
-    mapUpdate(tmpR,tmpC) = prob_to_log_odds(probFree);
-endfor
+for i = 1:size(freeCells,2)
+  mapUpdate(freeCells(1,i),freeCells(2,i)) = prob_to_log_odds(probFree);
+  endfor
 
 %TODO: update the log odds values in mapUpdate for each laser endpoint according to probOcc.
-for i=1:size(laserEndPnts,2)
-    mapUpdate(laserEndPntsMapFrame(1,i),laserEndPntsMapFrame(2,i)) = prob_to_log_odds(probOcc);
-endfor
+for i = 1:size(laserEndPntsMapFrame,2)
+  mapUpdate(laserEndPntsMapFrame(1,i),laserEndPntsMapFrame(2,i)) = prob_to_log_odds(probOcc);
+  endfor
 
 end
